@@ -1,0 +1,11 @@
+body {
+    border: 0;
+    background-color: white;
+}
+
+/* make the canvas the size of the viewport */
+canvas {
+    width: 640px;
+    height: 480px;
+    display: block;
+}

@@ -1,0 +1,125 @@
+<html>
+    <head>
+      <meta charset="utf-8">
+      <link rel="stylesheet" type="text/css" href="style.css">
+    </head>
+
+        <!--script id="vertex-shader" type="x-shader/x-vertex">
+            attribute vec4 a_position;
+
+            void main(void) {
+                gl_Position = a_position;
+            }
+        </script-->
+
+        <script id="vertex-shader-2d-matrix" type="x-shader/x-vertex">
+            attribute vec2 a_position;
+            
+            uniform mat3 u_matrix;
+
+            void main() {
+                // Multiply the position by the matrix.
+                gl_Position = vec4((u_matrix * vec3(a_position, 1)).xy, 0, 1);
+            }
+        </script>
+
+        <script id="vertex-shader-3d-matrix" type="x-shader/x-vertex">
+            attribute vec4 a_position;
+            attribute vec4 a_color;
+            attribute vec3 a_normal;
+            
+            uniform vec3 u_lightWorldPosition;
+            uniform vec3 u_viewWorldPosition;
+
+            uniform mat4 u_world;
+            uniform mat4 u_worldViewProjection;
+            uniform mat4 u_worldInverseTranspose;
+
+            uniform mat4 u_lowerMatrix;
+            uniform mat4 u_upperMatrix;
+            
+            varying vec4 v_color;
+            varying vec3 v_normal;
+
+            varying vec3 v_surfaceToLight;
+            varying vec3 v_surfaceToView;
+
+            void main() {
+                // Multiply the position by the matrix.
+                gl_Position = u_worldViewProjection * a_position;
+
+                // orient the normals and pass to the fragment shader
+                v_normal = mat3(u_worldInverseTranspose) * a_normal;
+                //v_normal = a_normal;
+
+                // compute the world position of the surface
+                vec3 surfaceWorldPosition = (u_world * a_position).xyz;
+
+                // compute the vector of the surface to the light
+                // and the vector of surface to the view/camera
+                // and pass it to the fragment shader
+                v_surfaceToLight = u_lightWorldPosition - surfaceWorldPosition;
+                v_surfaceToView = u_viewWorldPosition - surfaceWorldPosition;
+
+                v_color = a_color;
+                
+            }
+        </script>
+
+        <script id="fragment-shader" type="x-shader/x-fragment">
+            precision mediump float;
+
+            //uniform vec3 u_reverseLightDirection;
+            uniform float u_shininess;
+
+            varying vec4 v_color;
+            varying vec3 v_normal;
+
+            varying vec3 v_surfaceToLight;
+            varying vec3 v_surfaceToView;
+
+            void main() {
+                // because v_normal is a varying it's interpolated
+                // so it will not be a unit vector. Normalizing it
+                // will make it a unit vector again
+                vec3 normal = normalize(v_normal);
+
+                vec3 surfaceToLightDirection = normalize(v_surfaceToLight);
+                vec3 surfaceToViewDirection = normalize(v_surfaceToView);
+                vec3 halfVector = normalize(surfaceToLightDirection + surfaceToViewDirection);
+
+                //float light = dot(normal, u_reverseLightDirection);
+                float light = dot(normal, surfaceToLightDirection);
+                float specular = 0.0;
+                if(light > 0.0) {
+                    specular = pow(dot(normal, halfVector), u_shininess);
+                }
+
+                //gl_FragColor = vec4(0.2, 1, 0.2, 1);
+                gl_FragColor = v_color * 1.4;
+
+                // Multiply color portion with light value
+                gl_FragColor.rgb *= light;
+
+                // add the specular element
+                gl_FragColor.rgb += specular;
+            }
+        </script>
+    <script type="text/javascript" src="./m4.js"></script>
+    <script type="text/javascript" src="./m3.js"></script>
+    <script type="text/javascript" src="./robot-arm.js"></script>
+    <body>
+        <!--canvas id="c" width="445" height="890"></canvas-->
+        <canvas id="c"></canvas><br>
+        <button id="rotationButton" type="button">Toggle Rotation</button>
+        <button id="topAngle" type="button">Top Camera Angle</button> 
+        <button id="sideAngle" type="button">Side Camera Angle</button> 
+        <button id="reset" type="button">Reset</button> 
+        <p id="text">
+            The lighting still looks off, most noticeably on the upper arm, woopsie <br>
+            I also did not implement the ball retrieval, unfortunately. <br><br>
+            No model was used for the cylinder, I drew it in WebGL myself.<br><br>
+        </p>
+    </body>
+    
+</html>
